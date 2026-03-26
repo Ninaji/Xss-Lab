@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XSS Lab — StackSpot AI Demo</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>ᓚᘏᗢ XSS Lab</h1>
+    <p class="subtitulo">Digite algo na busca e observe o comportamento</p>
+
+    <div class="form-busca">
+      <input
+        type="text"
+        id="input-busca"
+        class="input-busca"
+        placeholder="Pesquisar..."
+      />
+      <button class="btn-buscar" onclick="buscar()">Buscar</button>
+    </div>
+
+    <div class="resultado" id="resultado">
+      <p>Você buscou por:</p>
+      <!--
+        ⚠ VULNERABILIDADE XSS AQUI:
+        O JavaScript usa innerHTML para exibir o input do usuário.
+        Veja assets/js/main.js para entender e corrigir.
+      -->
+      <div class="termo-buscado" id="termo"></div>
+    </div>
+
+    <div class="dica">
+      <strong>Como explorar o XSS:</strong><br>
+      Digite na busca: <code>&lt;img src=x onerror="alert('XSS!')"&gt;</code><br><br>
+      Ou tente: <code>&lt;script&gt;alert('hackeado')&lt;/script&gt;</code><br><br>
+      O agente StackSpot AI vai <strong>detectar e reprovar</strong> esse código na pipeline.
+    </div>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

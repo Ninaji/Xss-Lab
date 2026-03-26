@@ -1,0 +1,5 @@
+node_modules/
+jest-results.json
+coverage/
+.env
+*.log
