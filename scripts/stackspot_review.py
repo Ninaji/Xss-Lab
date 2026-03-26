@@ -19,7 +19,7 @@ AGENT_URL = f"https://genai-inference-app.stackspot.com/v1/agent/{AGENT_ID}/chat
 
 
 def autenticar():
-    print("ᓚᘏᗢ Autenticando na StackSpot AI...")
+    print("Autenticando na StackSpot AI...")
     r = requests.post(
         AUTH_URL,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -61,14 +61,13 @@ def carregar_jest():
 
 
 def revisar(token, html, js, jest_info):
-    print("ᓚᘏᗢ Enviando para o agente StackSpot AI...")
+    print("Enviando para o agente StackSpot AI...")
     prompt = f"""
 Você é um revisor de segurança em uma pipeline CI/CD.
 
 Analise o código abaixo com foco em:
-1. Vulnerabilidades XSS (Cross-Site Scripting)
-2. Uso inseguro de innerHTML, document.write ou eval
-3. Falta de sanitização de input do usuário
+
+outputJest: 
 
 {jest_info}
 
@@ -98,19 +97,19 @@ Conclua obrigatoriamente com:
 
 def decidir(mensagem):
     print("\n" + "="*60)
-    print("ᓚᘏᗢ RESPOSTA DO AGENTE:")
+    print("RESPOSTA DO AGENTE:")
     print(mensagem)
     print("="*60 + "\n")
 
     lower = mensagem.lower()
     if "reprovado" in lower:
-        print("ᓚᘏᗢ REPROVADO — Deploy bloqueado. Corrija o XSS e faça novo push.")
+        print("REPROVADO — Deploy bloqueado. Corrija o XSS e faça novo push.")
         sys.exit(1)
     if "aprovado" in lower:
-        print("ᓚᘏᗢ APROVADO — Prosseguindo para o deploy!")
+        print("APROVADO — Prosseguindo para o deploy!")
         sys.exit(0)
 
-    print("ᓚᘏᗢ Resposta ambígua — aprovando com ressalvas.")
+    print("Resposta ambígua — aprovando com ressalvas.")
     sys.exit(0)
 
 
