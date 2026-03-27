@@ -1,5 +1,5 @@
 """
-scripts/stackspot_review.py
+scripts/stackspot_review_threads.py
 """
 
 import os
@@ -7,6 +7,7 @@ import sys
 import json
 import glob
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
     from dotenv import load_dotenv
@@ -25,6 +26,7 @@ AGENT_URL = f"https://genai-inference-app.stackspot.com/v1/agent/{AGENT_ID}/chat
 RED    = "\033[31m"
 GREEN  = "\033[32m"
 YELLOW = "\033[33m"
+CYAN   = "\033[36m"
 BOLD   = "\033[1m"
 RESET  = "\033[0m"
 
@@ -37,7 +39,6 @@ def carregar_reviewignore():
             for linha in f:
                 linha = linha.strip()
                 if linha and not linha.startswith("#"):
-                    # Normaliza separadores para comparacao cross-platform
                     ignorados.add(linha.replace("\\", "/"))
     except FileNotFoundError:
         pass
@@ -58,24 +59,6 @@ def coletar_arquivos():
             arquivos.append(caminho)
 
     return arquivos
-
-
-def ler_arquivos(lista):
-    if not lista:
-        print(f"{YELLOW}AVISO: Nenhum arquivo encontrado para revisar.{RESET}")
-        sys.exit(0)
-
-    print("Arquivos encontrados para revisao:")
-    codigo = ""
-    for caminho in lista:
-        print(f"   + {caminho}")
-        try:
-            with open(caminho, "r", encoding="utf-8") as f:
-                conteudo = f.read()
-            codigo += f"\n\n{'─'*40}\nArquivo: {caminho}\n{'─'*40}\n{conteudo}"
-        except Exception as e:
-            print(f"{YELLOW}   AVISO: nao consegui ler {caminho}: {e}{RESET}")
-    return codigo
 
 
 def autenticar():
@@ -111,9 +94,14 @@ def carregar_jest():
         return "Resultado Jest: nao encontrado."
 
 
-def revisar(token, codigo, jest_info):
-    print("\nEnviando para o agente StackSpot AI...")
-    prompt = f"Output do Jest:\n{jest_info}\n\nArquivos:\n{codigo}"
+def revisar_arquivo(token, caminho, jest_info):
+    try:
+        with open(caminho, "r", encoding="utf-8") as f:
+            conteudo = f.read()
+    except Exception as e:
+        return caminho, False, f"Nao consegui ler o arquivo: {e}"
+
+    prompt = f"Output do Jest:\n{jest_info}\n\nArquivo: {caminho}\n{conteudo}"
     r = requests.post(
         AGENT_URL,
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
@@ -125,36 +113,65 @@ def revisar(token, codigo, jest_info):
         },
     )
     r.raise_for_status()
-    return r.json().get("message", "")
+    mensagem = r.json().get("message", "")
+    reprovado = "reprovado" in mensagem.lower()
+    return caminho, reprovado, mensagem
 
 
-def decidir(mensagem):
-    print("\n" + "=" * 60)
-    print(f"{BOLD}RESPOSTA DO AGENTE:{RESET}")
-    print(mensagem)
-    print("=" * 60 + "\n")
+def main():
+    token     = autenticar()
+    arquivos  = coletar_arquivos()
+    jest_info = carregar_jest()
 
-    lower = mensagem.lower()
-
-    if "reprovado" in lower:
-        print(f"{BOLD}{RED}  FAIL  StackSpot AI{RESET}")
-        print(f"{RED}    x  Codigo reprovado — nao recomendado fazer o push.{RESET}")
-        print(f"{RED}       Corrija os problemas acima e rode novamente.{RESET}\n")
-        sys.exit(1)
-
-    if "aprovado" in lower:
-        print(f"{BOLD}{GREEN}  PASS  StackSpot AI{RESET}")
-        print(f"{GREEN}    v  Codigo aprovado — pode fazer o git push.{RESET}\n")
+    if not arquivos:
+        print(f"{YELLOW}Nenhum arquivo encontrado para revisar.{RESET}")
         sys.exit(0)
 
-    print(f"{YELLOW}  WARN  StackSpot AI — resposta ambigua, aprovando com ressalvas.{RESET}\n")
-    sys.exit(0)
+    print(f"\nRevisando {len(arquivos)} arquivo(s) em paralelo...\n")
+    for a in arquivos:
+        print(f"   {CYAN}~ {a}{RESET}")
+    print()
+
+    resultados = []
+
+    with ThreadPoolExecutor(max_workers=len(arquivos)) as executor:
+        futures = {
+            executor.submit(revisar_arquivo, token, caminho, jest_info): caminho
+            for caminho in arquivos
+        }
+        for future in as_completed(futures):
+            caminho, reprovado, mensagem = future.result()
+            resultados.append((caminho, reprovado, mensagem))
+            print("=" * 60)
+            print(f"{BOLD}Arquivo: {caminho}{RESET}")
+            print(mensagem)
+            if reprovado:
+                print(f"{BOLD}{RED}  FAIL  {caminho}{RESET}")
+            else:
+                print(f"{BOLD}{GREEN}  PASS  {caminho}{RESET}")
+            print()
+
+    reprovados = [c for c, rep, _ in resultados if rep]
+
+    print("=" * 60)
+    print(f"{BOLD}RESULTADO FINAL:{RESET}\n")
+    for caminho, reprovado, _ in sorted(resultados, key=lambda x: x[0]):
+        if reprovado:
+            print(f"{RED}  x  {caminho}{RESET}")
+        else:
+            print(f"{GREEN}  v  {caminho}{RESET}")
+    print()
+
+    if reprovados:
+        print(f"{BOLD}{RED}  FAIL  StackSpot AI{RESET}")
+        print(f"{RED}    {len(reprovados)} arquivo(s) reprovado(s) — nao recomendado fazer o push.{RESET}")
+        print(f"{RED}    Corrija os problemas acima e rode novamente.{RESET}\n")
+        sys.exit(1)
+    else:
+        print(f"{BOLD}{GREEN}  PASS  StackSpot AI{RESET}")
+        print(f"{GREEN}    v  Todos os arquivos aprovados — pode fazer o git push.{RESET}\n")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
-    token     = autenticar()
-    arquivos  = coletar_arquivos()
-    codigo    = ler_arquivos(arquivos)
-    jest_info = carregar_jest()
-    resposta  = revisar(token, codigo, jest_info)
-    decidir(resposta)
+    main()

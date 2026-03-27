@@ -2,7 +2,11 @@
   "name": "xss-lab",
   "version": "1.0.0",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "review": "python scripts/stackspot_review.py",
+    "review:threads": "python scripts/stackspot_review_threads.py",
+    "pipeline": "jest --json --outputFile=jest-results.json && python scripts/stackspot_review.py",
+    "pipeline:threads": "jest --json --outputFile=jest-results.json && python scripts/stackspot_review_threads.py"
   },
   "devDependencies": {
     "jest": "^29.7.0",

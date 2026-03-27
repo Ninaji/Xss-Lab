@@ -1,4 +1,4 @@
-name: ᓚᘏᗢ CI/CD — Jest + StackSpot AI + Deploy
+name: CI/CD — Jest + StackSpot AI + Deploy
 
 on:
   push:
@@ -64,4 +64,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Simular Deploy
-        run: echo "ᓚᘏᗢ Deploy realizado com sucesso!"
+        run: echo "Deploy realizado com sucesso!"
