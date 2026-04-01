@@ -4,11 +4,13 @@ const fs   = require("fs");
 const path = require("path");
 
 const html = fs.readFileSync(path.resolve(__dirname, "../index.html"), "utf8");
-const js   = fs.readFileSync(path.resolve(__dirname, "../assets/js/main.js"), "utf8");
+
+// Importa a funcao diretamente do main.js via require
+// Para isso o main.js precisa exportar a funcao
+const { buscar } = require("../assets/js/main.js");
 
 beforeEach(() => {
   document.documentElement.innerHTML = html;
-  eval(js);
 });
 
 describe("Estrutura da página", () => {

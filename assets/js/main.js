@@ -20,10 +20,15 @@ function buscar() {
   // termoEl.textContent = termo;
 }
 
-// Expoe no escopo global para o Jest conseguir chamar nos testes
+// Expoe no escopo global para o navegador
 window.buscar = buscar;
 
 // Permite buscar apertando Enter
 document.getElementById('input-busca').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') buscar();
 });
+
+// Exporta para os testes Jest
+if (typeof module !== 'undefined') {
+  module.exports = { buscar };
+}
