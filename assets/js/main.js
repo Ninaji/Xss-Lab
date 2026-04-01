@@ -21,12 +21,17 @@ function buscar() {
 }
 
 // Expoe no escopo global para o navegador
-window.buscar = buscar;
+if (typeof window !== 'undefined') {
+  window.buscar = buscar;
+}
 
-// Permite buscar apertando Enter
-document.getElementById('input-busca').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') buscar();
-});
+// Permite buscar apertando Enter — so roda no navegador
+const inputBusca = document.getElementById('input-busca');
+if (inputBusca) {
+  inputBusca.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') buscar();
+  });
+}
 
 // Exporta para os testes Jest
 if (typeof module !== 'undefined') {
