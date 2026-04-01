@@ -1,8 +1,3 @@
-// assets/js/main.js
-
-// ⚠ VULNERABILIDADE XSS AQUI:
-// innerHTML interpreta HTML e executa JavaScript do usuario.
-// CORRECAO: trocar innerHTML por textContent
 
 function buscar() {
   const termo     = document.getElementById('input-busca').value;
@@ -12,20 +7,15 @@ function buscar() {
   if (!termo) return;
 
   resultado.classList.add('visivel');
-
-  // ⚠ LINHA VULNERAVEL
+ 
   termoEl.innerHTML = termo;
-
-  // VERSAO CORRIGIDA (descomente e apague a linha acima):
-  // termoEl.textContent = termo;
 }
 
-// Expoe no escopo global para o navegador
 if (typeof window !== 'undefined') {
   window.buscar = buscar;
 }
 
-// Permite buscar apertando Enter — so roda no navegador
+
 const inputBusca = document.getElementById('input-busca');
 if (inputBusca) {
   inputBusca.addEventListener('keydown', function (e) {
