@@ -8,11 +8,7 @@ const js   = fs.readFileSync(path.resolve(__dirname, "../assets/js/main.js"), "u
 
 beforeEach(() => {
   document.documentElement.innerHTML = html;
-
-  // Executa o JS no escopo global do jsdom
-  const scriptEl = document.createElement("script");
-  scriptEl.textContent = js;
-  document.body.appendChild(scriptEl);
+  eval(js);
 });
 
 describe("Estrutura da página", () => {
@@ -37,13 +33,13 @@ describe("Comportamento da busca", () => {
 
   test("resultado aparece após buscar", () => {
     document.getElementById("input-busca").value = "teste";
-    window.buscar();
+    buscar();
     expect(document.getElementById("resultado").classList.contains("visivel")).toBe(true);
   });
 
   test("innerHTML executa HTML do usuário — comportamento vulnerável a XSS", () => {
     document.getElementById("input-busca").value = "<b>negrito</b>";
-    window.buscar();
+    buscar();
     const termoEl = document.getElementById("termo");
     expect(termoEl.querySelector("b")).not.toBeNull();
   });
