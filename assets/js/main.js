@@ -33,7 +33,7 @@ if (inputBusca) {
   });
 }
 
-// Exporta para os testes Jest
+// Exporta para os testes Jest 2
 if (typeof module !== 'undefined') {
   module.exports = { buscar };
 }
