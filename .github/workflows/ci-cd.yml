@@ -1,4 +1,4 @@
-name: CI/CD — Jest + StackSpot AI + Deploy
+name: CI/CD Pipeline
 
 on:
   push:
@@ -8,8 +8,9 @@ on:
 
 jobs:
 
-  testes:
-    name: Testes Jest
+  # ── 1. LINTER ────────────────────────────────────────────────
+  linter:
+    name: ESLint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,11 +19,35 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Instalar dependências
+      - name: Instalar dependencias
         run: npm install
 
-      - name: Rodar testes Jest
-        run: npm test -- --json --outputFile=jest-results.json
+      - name: Rodar ESLint
+        run: npm run lint
+
+  # ── 2. TESTES + COBERTURA ────────────────────────────────────
+  testes:
+    name: Jest + Coverage
+    runs-on: ubuntu-latest
+    needs: linter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Rodar testes com cobertura
+        run: npm test -- --coverage --json --outputFile=jest-results.json
+
+      - name: Publicar relatorio de cobertura
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
 
       - name: Salvar resultado dos testes
         uses: actions/upload-artifact@v4
@@ -30,8 +55,9 @@ jobs:
           name: jest-results
           path: jest-results.json
 
-  revisao-stackspot:
-    name: StackSpot AI Code Review
+  # ── 3. STACKSPOT AI REVIEW ───────────────────────────────────
+  revisao:
+    name: StackSpot AI Review
     runs-on: ubuntu-latest
     needs: testes
     steps:
@@ -45,10 +71,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Instalar requests
-        run: pip install requests
+      - name: Instalar dependencias Python
+        run: pip install -r requirements.txt
 
-      - name: Rodar revisão StackSpot AI
+      - name: Rodar revisao StackSpot AI
         env:
           STACKSPOT_CLIENT_ID:     ${{ secrets.STACKSPOT_CLIENT_ID }}
           STACKSPOT_CLIENT_SECRET: ${{ secrets.STACKSPOT_CLIENT_SECRET }}
@@ -56,12 +82,45 @@ jobs:
           STACKSPOT_AGENT_ID:      ${{ secrets.STACKSPOT_AGENT_ID }}
         run: python scripts/stackspot_review.py
 
-  deploy:
-    name: Deploy
+  # ── 4. BUILD ─────────────────────────────────────────────────
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    needs: revisao-stackspot
+    needs: revisao
     steps:
       - uses: actions/checkout@v4
 
-      - name: Simular Deploy
-        run: echo "Deploy realizado com sucesso!"
+      - name: Empacotar arquivos estaticos
+        run: |
+          mkdir -p dist
+          cp index.html dist/
+          cp -r assets dist/
+
+      - name: Salvar build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist/
+
+  # ── 5. DEPLOY — AZURE STATIC WEB APPS ────────────────────────
+  deploy:
+    name: Deploy Azure
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: dist/
+
+      - name: Deploy para Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: dist/
+          output_location: ""
+          skip_app_build: true
