@@ -39,10 +39,10 @@ describe("Comportamento da busca", () => {
     expect(document.getElementById("resultado").classList.contains("visivel")).toBe(true);
   });
 
-  test("innerHTML executa HTML do usuário — comportamento vulnerável a XSS", () => {
-    document.getElementById("input-busca").value = "<b>negrito</b>";
-    buscar();
-    const termoEl = document.getElementById("termo");
-    expect(termoEl.querySelector("b")).not.toBeNull();
-  });
+  // test("innerHTML executa HTML do usuário — comportamento vulnerável a XSS", () => {
+  //   document.getElementById("input-busca").value = "<b>negrito</b>";
+  //   buscar();
+  //   const termoEl = document.getElementById("termo");
+  //   expect(termoEl.querySelector("b")).not.toBeNull();
+  // });
 });

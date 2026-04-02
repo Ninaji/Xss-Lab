@@ -8,7 +8,7 @@ function buscar() {
 
   resultado.classList.add('visivel');
  
-  termoEl.innerHTML = termo;
+  termoEl.textContent = termo;
 }
 
 if (typeof window !== 'undefined') {
